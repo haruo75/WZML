@@ -26,8 +26,7 @@ def initiate_search_tools():
         globals()['PLUGINS'] = []
         src_plugins = jsonloads(SEARCH_PLUGINS)
         qbclient = get_client()
-        qb_plugins = qbclient.search_plugins()
-        if qb_plugins:
+        if qb_plugins := qbclient.search_plugins():
             for plugin in qb_plugins:
                 qbclient.search_uninstall_plugin(names=plugin['name'])
         qbclient.search_install_plugin(src_plugins)
@@ -168,10 +167,6 @@ def __search(bot, key, site, message, method):
         buttons.buildbutton("🔎 VIEW", link)
         button = buttons.build_menu(1)
         editMessage(msg, message, button)
-        if not method.startswith('api'):
-            client.search_delete(search_id=search_id)
-    
-    
     else:
 
 
@@ -234,8 +229,8 @@ def __search(bot, key, site, message, method):
             f.write(html_template.replace('{msg}', hmsg).replace('{title}', f'{method}_{key}_{site}'))
         deleteMessage(bot, message)
         sendFile(bot, message.reply_to_message, name, cap)
-        if not method.startswith('api'):
-            client.search_delete(search_id=search_id)
+    if not method.startswith('api'):
+        client.search_delete(search_id=search_id)
 def __getResult(search_results, key, message, method):
     if config_dict['TELEGRAPH_STYLE'] is True:
         telegraph_content = []

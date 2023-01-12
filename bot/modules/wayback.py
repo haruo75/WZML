@@ -24,21 +24,22 @@ def wayback(update, context):
     try: link = re.match(r"((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*", link)[0]
     except TypeError: return sendMessage('Not a valid link for wayback.', context.bot, update)
     sent = sendMessage('Running WayBack. Wait about 20 secs.', context.bot, update.message)
-    retLink = saveWebPage(link)
-    if not retLink: return editMessage('Cannot archieved. Try again later.', sent)
-    editMessage(f'Saved webpage: {short_url(retLink)}', sent)
+    if retLink := saveWebPage(link):
+        editMessage(f'Saved webpage: {short_url(retLink)}', sent)
+    else:
+        return editMessage('Cannot archieved. Try again later.', sent)
 
 
 def saveWebPage(pageurl:str):
-    LOGGER.info("Wayback running for: " + pageurl)
+    LOGGER.info(f"Wayback running for: {pageurl}")
     user_agent = getRandomUserAgent()
     try:
         wayback = waybackpy.Url(pageurl, user_agent)
         archive = wayback.save()
-        LOGGER.info("wayback success for: " + pageurl)
+        LOGGER.info(f"wayback success for: {pageurl}")
         return archive.archive_url
     except Exception as r:
-        LOGGER.error("wayback unsuccess for: " + pageurl + " , " + str(r))
+        LOGGER.error(f"wayback unsuccess for: {pageurl} , {str(r)}")
         return None
 
 

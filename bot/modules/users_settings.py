@@ -36,7 +36,11 @@ def get_user_settings(from_user, key=None):
         userlog = user_dict['userlog'] if user_dict and user_dict.get('userlog') else "Not Exists"
         imdb = user_dict['imdb_temp'] if user_dict and user_dict.get('imdb_temp') else "Not Exists"
         anilist = user_dict['ani_temp'] if user_dict and user_dict.get('ani_temp') else "Not Exists"
-        ytq = user_dict['yt_ql'] if user_dict and user_dict.get('yt_ql') else config_dict['YT_DLP_QUALITY'] if config_dict['YT_DLP_QUALITY'] else "Not Exists"
+        ytq = (
+            user_dict['yt_ql']
+            if user_dict and user_dict.get('yt_ql')
+            else config_dict['YT_DLP_QUALITY'] or "Not Exists"
+        )
 
         if not user_dict and config_dict['AS_DOCUMENT'] or user_dict and user_dict.get('as_doc'):
             ltype = "DOCUMENT"
@@ -79,8 +83,8 @@ def get_user_settings(from_user, key=None):
 ├ Custom Thumbnail : <b>{thumbmsg}</b>
 ├ YT-DLP Quality is : <b>{escape(ytq)}</b>
 ├ UserLog : <b>{userlog}</b>
-├ IMDB : <b>{imdbval if imdbval else imdb}</b>
-├ AniList : <b>{anival if anival else anilist}</b>
+├ IMDB : <b>{imdbval or imdb}</b>
+├ AniList : <b>{anival or anilist}</b>
 ╰ User Plan : <b>{uplan}</b>
 '''
     elif key == 'mirror':
@@ -298,7 +302,6 @@ def edit_user_settings(update, context):
         update_user_settings(message, query.from_user, 'leech')
     elif data[2] == "font":
         handler_dict[user_id] = False
-        FONT_SPELL = {'b':'<b>Bold</b>', 'i':'<i>Italics</i>', 'code':'<code>Monospace</code>', 's':'<s>Strike</s>', 'u':'<u>Underline</u>', 'tg-spoiler':'<tg-spoiler>Spoiler</tg-spoiler>'}
         buttons = ButtonMaker()
         buttons.sbutton("Spoiler", f"userset {user_id} Spoiler")
         buttons.sbutton("Italics", f"userset {user_id} Italics")
@@ -311,7 +314,9 @@ def edit_user_settings(update, context):
         buttons.sbutton("Close", f"userset {user_id} close")
         btns = buttons.build_menu(2)
         if user_id in user_data and user_data[user_id].get('cfont'): cf = user_data[user_id]['cfont']
-        else: cf = [f'{FONT_SPELL[config_dict["CAPTION_FONT"]]} (Default)']
+        else:else
+            FONT_SPELL = {'b':'<b>Bold</b>', 'i':'<i>Italics</i>', 'code':'<code>Monospace</code>', 's':'<s>Strike</s>', 'u':'<u>Underline</u>', 'tg-spoiler':'<tg-spoiler>Spoiler</tg-spoiler>'}
+            cf = [f'{FONT_SPELL[config_dict["CAPTION_FONT"]]} (Default)']
         editMessage("<u>Change your Font Style from below:</u>\n\n• Current Style : " + cf[0], message, btns)
     elif data[2] == "Spoiler":
         eVal = ["<tg-spoiler>Spoiler</tg-spoiler>", "tg-spoiler"]
@@ -373,8 +378,7 @@ def edit_user_settings(update, context):
         if user_id not in user_data and not user_data[user_id].get('imdb_temp'):
             return query.answer(text="Send new settings command. 🙃")
         query.answer()
-        imdb = user_data[user_id].get('imdb_temp')
-        if imdb:
+        if imdb := user_data[user_id].get('imdb_temp'):
             msg = f"IMDB Template for: {query.from_user.mention_html()} (<code>{str(user_id)}</code>)\n\n{escape(imdb)}"
             im = sendMessage(msg, context.bot, message)
             Thread(args=(context.bot, update.message, im)).start()
@@ -382,8 +386,7 @@ def edit_user_settings(update, context):
         if user_id not in user_data and not user_data[user_id].get('ani_temp'):
             return query.answer(text="Send new settings command. 🙃")
         query.answer()
-        anilist = user_data[user_id].get('ani_temp')
-        if anilist:
+        if anilist := user_data[user_id].get('ani_temp'):
             msg = f"AniList Template for: {query.from_user.mention_html()} (<code>{str(user_id)}</code>)\n\n{escape(anilist)}"
             ani = sendMessage(msg, context.bot, message)
             Thread(args=(context.bot, update.message, ani)).start()

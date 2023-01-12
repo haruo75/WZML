@@ -183,8 +183,7 @@ class GoogleDriveHelper:
         try:
             file_id = self.__getIdFromUrl(link)
         except (KeyError, IndexError):
-            msg = "Google Drive ID could not be found in the provided link"
-            return msg
+            return "Google Drive ID could not be found in the provided link"
         msg = ''
         try:
             self.__service.files().delete(fileId=file_id, supportsAllDrives=True).execute()
@@ -289,7 +288,9 @@ class GoogleDriveHelper:
         file_id = file.get("id")
         if not config_dict['IS_TEAM_DRIVE']:
             self.__set_permission(file_id)
-        LOGGER.info("Created G-Drive Folder:\nName: {}\nID: {} ".format(file.get("name"), file_id))
+        LOGGER.info(
+            f'Created G-Drive Folder:\nName: {file.get("name")}\nID: {file_id} '
+        )
         return file_id
 
     @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(10),
@@ -316,8 +317,7 @@ class GoogleDriveHelper:
                 self.__set_permission(response['id'])
 
             drive_file = self.__service.files().get(fileId=response['id'], supportsAllDrives=True).execute()
-            download_url = self.__G_DRIVE_BASE_DOWNLOAD_URL.format(drive_file.get('id'))
-            return download_url
+            return self.__G_DRIVE_BASE_DOWNLOAD_URL.format(drive_file.get('id'))
         media_body = MediaFileUpload(file_path,
                                      mimetype=mime_type,
                                      resumable=True,
@@ -357,8 +357,7 @@ class GoogleDriveHelper:
             self.__set_permission(response['id'])
         # Define file instance and get url for download
         drive_file = self.__service.files().get(fileId=response['id'], supportsAllDrives=True).execute()
-        download_url = self.__G_DRIVE_BASE_DOWNLOAD_URL.format(drive_file.get('id'))
-        return download_url
+        return self.__G_DRIVE_BASE_DOWNLOAD_URL.format(drive_file.get('id'))
 
 
     def clone(self, link, user_id):
@@ -369,8 +368,7 @@ class GoogleDriveHelper:
         try:
             file_id = self.__getIdFromUrl(link)
         except (KeyError, IndexError):
-            msg = "Google Drive ID could not be found in the provided link"
-            return msg
+            return "Google Drive ID could not be found in the provided link"
         msg = ""
         LOGGER.info(f"File ID: {file_id}")
         try:
@@ -438,7 +436,7 @@ class GoogleDriveHelper:
             if config_dict['BUTTON_SIX_NAME'] != '' and config_dict['BUTTON_SIX_URL'] != '':
                 buttons.buildbutton(f"{config_dict['BUTTON_SIX_NAME']}", f"{config_dict['BUTTON_SIX_URL']}")
             if config_dict['SOURCE_LINK']:
-                buttons.buildbutton(f"🔗 Source Link", link)
+                buttons.buildbutton("🔗 Source Link", link)
         except Exception as err:
             if isinstance(err, RetryError):
                 LOGGER.info(f"Total Attempts: {err.last_attempt.attempt_number}")
@@ -577,14 +575,12 @@ class GoogleDriveHelper:
             return {'files': []}
 
     def drive_list(self, fileName, stopDup=False, noMulti=False, isRecursive=True, itemType=""):
-        TITLE_NAME = config_dict['TITLE_NAME']
+        msg = ""
+        contents_count = 0
+        Title = False
         if config_dict['TELEGRAPH_STYLE']:
-            msg = ""
             fileName = self.__escapes(str(fileName))
-            contents_count = 0
             telegraph_content = []
-            path = []
-            Title = False
             if len(DRIVES_IDS) > 1:
                 token_service = self.__alt_authorize()
                 if token_service is not None:
@@ -618,7 +614,7 @@ class GoogleDriveHelper:
                     elif mime_type == 'application/vnd.google-apps.shortcut':
                         furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
                         msg += f"⁍<a href='https://drive.google.com/drive/folders/{file.get('id')}'>{file.get('name')}" \
-                               f"</a> (shortcut)"
+                                   f"</a> (shortcut)"
                     else:
                         furl = f"https://drive.google.com/uc?id={file.get('id')}&export=download"
                         msg += f"📄 <code>{file.get('name')}<br>({get_readable_file_size(int(file.get('size', 0)))})</code><br>"
@@ -640,36 +636,34 @@ class GoogleDriveHelper:
                         msg = ""
                 if noMulti:
                     break
-    
+
             if msg != '':
                 telegraph_content.append(msg)
-    
-            if len(telegraph_content) == 0:
+
+            if not telegraph_content:
                 return "", None
 
-            for content in telegraph_content:
-                path.append(
-                    telegraph.create_page(
-                        title= f"{config_dict['TITLE_NAME']} Drive Search",
-                        content=content
-                    )["path"]
-                )
+            TITLE_NAME = config_dict['TITLE_NAME']
+            path = [
+                telegraph.create_page(
+                    title=f"{config_dict['TITLE_NAME']} Drive Search",
+                    content=content,
+                )["path"]
+                for content in telegraph_content
+            ]
             if len(path) > 1:
                 telegraph.edit_telegraph(path, telegraph_content)
-    
+
             msg = f"<b>Found {contents_count} result for <i>{fileName}</i></b>"
             buttons = ButtonMaker()
             buttons.buildbutton("🔎 VIEW", f"https://telegra.ph/{path[0]}")
-    
+
             return msg, buttons.build_menu(1)
-    
+
 
         else:
 
-            msg = ""
             fileName = self.__escapes(str(fileName))
-            contents_count = 0
-            Title = False
             if len(DRIVES_IDS) > 1:
                 token_service = self.__alt_authorize()
                 if token_service is not None:
@@ -684,49 +678,49 @@ class GoogleDriveHelper:
                         continue
                 if not Title:
                     msg += '<span class="container center rfontsize">' \
-                          f'<h4>Search Result For {fileName}</h4></span>'
+                              f'<h4>Search Result For {fileName}</h4></span>'
                     Title = True
                 if drive_name:
                     msg += '<span class="container center rfontsize">' \
-                          f'<b>{drive_name}</b></span>'
+                              f'<b>{drive_name}</b></span>'
                 for file in response.get('files', []):
                     mime_type = file.get('mimeType')
                     if mime_type == "application/vnd.google-apps.folder":
                         furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
                         msg += '<span class="container start rfontsize">' \
-                              f"<div>📁 {file.get('name')} (folder)</div>" \
-                               '<div class="dlinks">' \
-                              f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'
+                                  f"<div>📁 {file.get('name')} (folder)</div>" \
+                                   '<div class="dlinks">' \
+                                  f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'
                         if index_url:
                             if isRecur:
                                 url_path = "/".join([rquote(n, safe='') for n in self.__get_recursive_list(file, dir_id)])
                             else:
                                 url_path = rquote(f'{file.get("name")}', safe='')
                             msg += '<span> | </span>' \
-                                f'<span> <a class="forhover" href="{index_url}/{url_path}/">Index Link</a></span>'
+                                    f'<span> <a class="forhover" href="{index_url}/{url_path}/">Index Link</a></span>'
                     elif mime_type == 'application/vnd.google-apps.shortcut':
                         furl = f"https://drive.google.com/drive/folders/{file.get('id')}"
                         msg += '<span class="container start rfontsize">' \
-                              f"<div>📁 {file.get('name')} (shortcut)</div>" \
-                               '<div class="dlinks">' \
-                              f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'\
-                               '</div></span>'
+                                  f"<div>📁 {file.get('name')} (shortcut)</div>" \
+                                   '<div class="dlinks">' \
+                                  f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'\
+                                   '</div></span>'
                     else:
                         furl = f"https://drive.google.com/uc?id={file.get('id')}&export=download"
                         msg += '<span class="container start rfontsize">' \
-                              f"<div>📄 {file.get('name')} ({get_readable_file_size(int(file.get('size', 0)))})</div>" \
-                               '<div class="dlinks">' \
-                              f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'
+                                  f"<div>📄 {file.get('name')} ({get_readable_file_size(int(file.get('size', 0)))})</div>" \
+                                   '<div class="dlinks">' \
+                                  f'<span> <a class="forhover" href="{furl}">Drive Link</a></span>'
                         if index_url:
                             if isRecur:
                                 url_path = "/".join(rquote(n, safe='') for n in self.__get_recursive_list(file, dir_id))
                             else:
                                 url_path = rquote(f'{file.get("name")}')
                             msg += '<span> | </span>' \
-                                f'<span> <a class="forhover" href="{index_url}/{url_path}">Index Link</a></span>'
+                                    f'<span> <a class="forhover" href="{index_url}/{url_path}">Index Link</a></span>'
                             if config_dict['VIEW_LINK']:
                                 msg += '<span> | </span>' \
-                                    f'<span> <a class="forhover" href="{index_url}/{url_path}?a=view">View Link</a></span>'
+                                        f'<span> <a class="forhover" href="{index_url}/{url_path}?a=view">View Link</a></span>'
                     msg += '</div></span>'
                     contents_count += 1
                 if noMulti:
@@ -744,8 +738,7 @@ class GoogleDriveHelper:
         try:
             file_id = self.__getIdFromUrl(link)
         except (KeyError, IndexError):
-            msg = "Google Drive ID could not be found in the provided link"
-            return msg
+            return "Google Drive ID could not be found in the provided link"
         msg = ""
         LOGGER.info(f"File ID: {file_id}")
         try:
