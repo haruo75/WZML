@@ -18,7 +18,7 @@ def picture_add(update, context):
             pic_add = msg_text.strip()
             editMessage("<b>Adding your Link ...</b>", editable)
     elif resm and resm.photo:
-        if not (resm.photo and resm.photo[-1].file_size <= 5242880*2):
+        if resm.photo[-1].file_size > 5242880 * 2:
             editMessage("This Media is Not Supported! Only Send Photos !!", editable)
             return
         path = "Thumbnails/"
@@ -47,12 +47,12 @@ def picture_add(update, context):
     editMessage(f"<b><i>Successfully Added to Existing Random Pictures Status List!</i></b>\n\n<b>Total Pics :</b><code>{len(config_dict['PICS'])}</code>", editable)
 
 def pictures(update, context):
-    user_id = update.message.from_user.id
     if not config_dict['PICS']:
         sendMessage("No Photo to Show ! Add by /addpic", context.bot, update.message)
     else:
         to_edit = sendMessage("Generating Grid of your Images...", context.bot, update.message)
         buttons = ButtonMaker()
+        user_id = update.message.from_user.id
         buttons.sbutton("<<", f"pics {user_id} turn -1")
         buttons.sbutton(">>", f"pics {user_id} turn 1")
         buttons.sbutton("Remove Photo", f"pics {user_id} remov 0")

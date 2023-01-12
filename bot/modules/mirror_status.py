@@ -57,9 +57,7 @@ def status_pages(update, context):
             query.answer()
         else:
             query.answer(text=f"{user_name}, You Don't Have Rights To Close This!", show_alert=True)
-    if data[1] == "pre" or "nex":
-        done = turn(data)
-    if done:
+    if done := turn(data):
         update_all_messages(True)
         query.answer()
     else:

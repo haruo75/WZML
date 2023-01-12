@@ -237,15 +237,20 @@ def anilist(update: Update, context: CallbackContext, aniid=None, u_id=None):
     else:
         user_id = int(u_id)
         vars = {'id' : aniid}
-    animeResp = rpost(url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': vars}).json()['data'].get('Media', None)
-    if animeResp:
+    if (
+        animeResp := rpost(
+            url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': vars}
+        )
+        .json()['data']
+        .get('Media', None)
+    ):
         ro_title = animeResp['title']['romaji']
         na_title = animeResp['title']['native']
         en_title = animeResp['title']['english']
-        format = animeResp['format'] 
-        if format: format = format.capitalize()
-        status = animeResp['status']
-        if status: status = status.capitalize()
+        if format := animeResp['format']:
+            format = format.capitalize()
+        if status := animeResp['status']:
+            status = status.capitalize()
         year = animeResp['seasonYear'] or 'N/A'
         try:
             sd = animeResp['startDate']
@@ -271,7 +276,7 @@ def anilist(update: Update, context: CallbackContext, aniid=None, u_id=None):
         studios = ", ".join(f"""<a href="{x['siteUrl']}">{x['name']}</a>""" for x in animeResp['studios']['nodes'])
         source = animeResp['source'] or '-'
         hashtag = animeResp['hashtag'] or 'N/A'
-        synonyms = ", ".join(x for x in animeResp['synonyms']) or ''
+        synonyms = ", ".join(animeResp['synonyms']) or ''
         siteurl = animeResp.get('siteUrl')
         trailer = animeResp.get('trailer', None)
         if trailer and trailer.get('site') == "youtube":
@@ -309,9 +314,8 @@ def anilist(update: Update, context: CallbackContext, aniid=None, u_id=None):
             LOGGER.error(f"AniList Error: {e}")
         if aniid:
             return template, buttons
-        else:
-            try: message.reply_photo(photo = title_img, caption = template, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons))
-            except: message.reply_photo(photo = 'https://te.legra.ph/file/8a5155c0fc61cc2b9728c.jpg', caption = template, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons))
+        try: message.reply_photo(photo = title_img, caption = template, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons))
+        except: message.reply_photo(photo = 'https://te.legra.ph/file/8a5155c0fc61cc2b9728c.jpg', caption = template, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(buttons))
   
 def setAnimeButtons(update, context):
     query = update.callback_query
@@ -328,33 +332,43 @@ def setAnimeButtons(update, context):
     elif data[2] == "tags":
         query.answer()
         aniTag = rpost(url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': {'id' : siteid}}).json()['data'].get('Media', None)
-        msg = "<b>Tags :</b>\n\n"
-        msg += "\n".join(f"""<a href="https://anilist.co/search/anime?genres={q(x['name'])}">{x['name']}</a> {x['rank']}%""" for x in aniTag['tags'])
+        msg = "<b>Tags :</b>\n\n" + "\n".join(
+            f"""<a href="https://anilist.co/search/anime?genres={q(x['name'])}">{x['name']}</a> {x['rank']}%"""
+            for x in aniTag['tags']
+        )
         message.edit_caption(caption=msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(btn))
     elif data[2] == "sts":
         query.answer()
         links = rpost(url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': {'id' : siteid}}).json()['data'].get('Media', None)
-        msg = "<b>External & Streaming Links :</b>\n\n"
-        msg += "\n".join(f"""<a href="{x['url']}">{x['site']}</a>""" for x in links['externalLinks'])
+        msg = "<b>External & Streaming Links :</b>\n\n" + "\n".join(
+            f"""<a href="{x['url']}">{x['site']}</a>"""
+            for x in links['externalLinks']
+        )
         message.edit_caption(caption=msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(btn))
     elif data[2] == "rev":
         query.answer()
         animeResp = rpost(url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': {'id' : siteid}}).json()['data'].get('Media', None)
-        msg = "<b>Reviews :</b>\n\n"
         reList = animeResp['reviews']['nodes']
-        msg += "\n\n".join(f"""<a href="{x['siteUrl']}">{x['summary']}</a>\n<b>Score :</b> <code>{x['score']} / 100</code>\n<i>By {x['user']['name']}</i>""" for x in reList[:8])
+        msg = "<b>Reviews :</b>\n\n" + "\n\n".join(
+            f"""<a href="{x['siteUrl']}">{x['summary']}</a>\n<b>Score :</b> <code>{x['score']} / 100</code>\n<i>By {x['user']['name']}</i>"""
+            for x in reList[:8]
+        )
         message.edit_caption(caption=msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(btn))
     elif data[2] == "rel":
         query.answer()
         animeResp = rpost(url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': {'id' : siteid}}).json()['data'].get('Media', None)
-        msg = "<b>Relations :</b>\n\n"
-        msg += "\n\n".join(f"""<a href="{x['node']['siteUrl']}">{x['node']['title']['english']}</a> ({x['node']['title']['romaji']})\n<b>Format</b>: <code>{x['node']['format'].capitalize()}</code>\n<b>Status</b>: <code>{x['node']['status'].capitalize()}</code>\n<b>Average Score</b>: <code>{x['node']['averageScore']}%</code>\n<b>Source</b>: <code>{x['node']['source'].capitalize()}</code>\n<b>Relation Type</b>: <code>{x.get('relationType', 'N/A').capitalize()}</code>""" for x in animeResp['relations']['edges'])
+        msg = "<b>Relations :</b>\n\n" + "\n\n".join(
+            f"""<a href="{x['node']['siteUrl']}">{x['node']['title']['english']}</a> ({x['node']['title']['romaji']})\n<b>Format</b>: <code>{x['node']['format'].capitalize()}</code>\n<b>Status</b>: <code>{x['node']['status'].capitalize()}</code>\n<b>Average Score</b>: <code>{x['node']['averageScore']}%</code>\n<b>Source</b>: <code>{x['node']['source'].capitalize()}</code>\n<b>Relation Type</b>: <code>{x.get('relationType', 'N/A').capitalize()}</code>"""
+            for x in animeResp['relations']['edges']
+        )
         message.edit_caption(caption=msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(btn))
     elif data[2] == "cha":
         query.answer()
         animeResp = rpost(url, json={'query': ANIME_GRAPHQL_QUERY, 'variables': {'id' : siteid}}).json()['data'].get('Media', None)
-        msg = "<b>List of Characters :</b>\n\n"
-        msg += "\n\n".join(f"""• <a href="{x['node']['siteUrl']}">{x['node']['name']['full']}</a> ({x['node']['name']['native']})\n<b>Role :</b> {x['role'].capitalize()}""" for x in (animeResp['characters']['edges'])[:8])
+        msg = "<b>List of Characters :</b>\n\n" + "\n\n".join(
+            f"""• <a href="{x['node']['siteUrl']}">{x['node']['name']['full']}</a> ({x['node']['name']['native']})\n<b>Role :</b> {x['role'].capitalize()}"""
+            for x in (animeResp['characters']['edges'])[:8]
+        )
         message.edit_caption(caption=msg, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(btn))
     elif data[2] == "home":
         query.answer()
@@ -369,17 +383,22 @@ def character(update: Update, _):
         return
     search = search[1]
     variables = {'query': search}
-    json = requests.post(url, json={'query': character_query, 'variables': variables}).json()['data'].get('Character', None)
-    if json:
+    if (
+        json := requests.post(
+            url, json={'query': character_query, 'variables': variables}
+        )
+        .json()['data']
+        .get('Character', None)
+    ):
         msg = f"*{json.get('name').get('full')}*(`{json.get('name').get('native')}`)\n"
         description = f"{json['description']}"
         site_url = json.get('siteUrl')
         msg += shorten(description, site_url)
-        image = json.get('image', None)
-        if image:
+        if image := json.get('image', None):
             image = image.get('large')
             update.effective_message.reply_photo(photo = image, caption = msg, parse_mode=ParseMode.MARKDOWN)
-        else: update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
+        else:
+            update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
 
 def manga(update: Update, _):
     message = update.effective_message
